@@ -52,10 +52,9 @@ public class Enemy : MonoBehaviour
         if (health <= 0)
         {
             // Xác suất rơi vật phẩm thông thường
-            int randomNumber = Random.Range(0, 101); // Từ 0 đến 100
+            int randomNumber = Random.Range(0, 101);
             if (randomNumber < pickupChance)
             {
-                // Chọn ngẫu nhiên một vật phẩm từ danh sách
                 GameObject randomPickup = pickups[Random.Range(0, pickups.Length)];
                 Instantiate(randomPickup, transform.position, transform.rotation);
             }
@@ -67,9 +66,13 @@ public class Enemy : MonoBehaviour
                 Instantiate(healthPickup, transform.position, transform.rotation);
             }
 
-            // Sinh hiệu ứng chết và xoá enemy khỏi màn chơi
+            // Cộng số kill
+            Player.enemiesKilled++;
+
+            // Sinh hiệu ứng và huỷ enemy
             Instantiate(deathEffect, transform.position, Quaternion.identity);
             Destroy(this.gameObject);
         }
+
     }
 }

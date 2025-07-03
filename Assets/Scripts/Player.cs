@@ -6,22 +6,19 @@ using UnityEngine.SceneManagement;
 
 public class Player : MonoBehaviour
 {
-    // Tốc độ di chuyển của người chơi
+    public static int Score;
     public float speed;
+    public float smoothTime = 0.05f; // Thời gian làm mượt
 
     // Rigidbody2D để xử lý vật lý
     private Rigidbody2D rb;
-
-    // Hướng di chuyển
     private Vector2 moveAmount;
+    private Vector2 moveVelocity = Vector2.zero; // dùng cho SmoothDamp
 
-    // Animator để điều khiển animation
     private Animator anim;
 
     // Máu hiện tại của người chơi
     public int health;
-
-    // Mảng trái tim hiển thị trên UI
     public GameObject[] hearts;
 
     // Hình trái tim đầy và trái tim rỗng
@@ -30,8 +27,6 @@ public class Player : MonoBehaviour
 
     // Animator riêng cho hiệu ứng khi bị thương
     public Animator hurtAnim;
-
-    // Đối tượng quản lý chuyển cảnh
     private SceneTransition sceneTransitions;
 
     // Âm thanh khi bị thương
@@ -56,14 +51,12 @@ public class Player : MonoBehaviour
 
     private void Update()
     {
-        // Nhận input từ bàn phím
-        Vector2 moveInput = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
-        moveAmount = moveInput.normalized * speed;
 
-        // Nếu đang di chuyển
+        Vector2 moveInput = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
+
+        moveAmount = moveInput.normalized * speed;
         if (moveInput != Vector2.zero)
-        {
-            // Tạo dấu vết khi chạy
+
             if (timeBtwTrail <= 0)
             {
                 Instantiate(trail, groundPos.position, Quaternion.identity);
@@ -76,56 +69,49 @@ public class Player : MonoBehaviour
 
             // Bật animation chạy
             anim.SetBool("isRunning", true);
-        }
         else
         {
-            // Tắt animation chạy
+        else {
             anim.SetBool("isRunning", false);
         }
     }
 
     private void FixedUpdate()
-    {
-        // Di chuyển nhân vật bằng Rigidbody (giúp mượt hơn)
+        // Làm mượt di chuyển bằng SmoothDamp
+        Vector2 newPosition = Vector2.SmoothDamp(rb.position, rb.position + moveAmount * Time.fixedDeltaTime, ref moveVelocity, smoothTime);
+        rb.MovePosition(newPosition);
         rb.MovePosition(rb.position + moveAmount * Time.fixedDeltaTime);
     }
 
     // Hàm xử lý khi nhân vật bị trúng đòn
     public void TakeDamage(int amount)
-    {
-        // Phát âm thanh và hiệu ứng bị thương
         Instantiate(hurtSound, transform.position, Quaternion.identity);
-
-        // Trừ máu
+       Instantiate(hurtSound, transform.position, Quaternion.identity);
         health -= amount;
 
         // Cập nhật giao diện trái tim
         UpdateHealthUI(health);
 
         // Animation bị thương
-        hurtAnim.SetTrigger("hurt");
 
-        // Nếu máu <= 0 thì thua
+        hurtAnim.SetTrigger("hurt");
         if (health <= 0)
         {
             Destroy(this.gameObject); // Xoá người chơi
             sceneTransitions.LoadScene("Lose"); // Chuyển sang màn thua
         }
     }
-
-    // Hàm đổi vũ khí
     public void ChangeWeapon(Weapon weaponToEquip)
     {
-        // Xoá vũ khí hiện tại (nếu có)
+    public void ChangeWeapon(Weapon weaponToEquip) {
         Destroy(GameObject.FindGameObjectWithTag("Weapon"));
 
         // Tạo vũ khí mới tại vị trí người chơi
         Instantiate(weaponToEquip, transform.position, transform.rotation, transform);
     }
-
-    // Cập nhật hình ảnh trái tim trên UI dựa theo máu hiện tại
     void UpdateHealthUI(int currentHealth)
     {
+
         for (int i = 0; i < hearts.Length; i++)
         {
             if (i < currentHealth)
@@ -138,10 +124,9 @@ public class Player : MonoBehaviour
             }
         }
     }
-
-    // Hồi máu cho người chơi
     public void Heal(int healAmount)
     {
+    public void Heal(int healAmount) {
         if (health + healAmount > 5)
         {
             health = 5;

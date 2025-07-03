@@ -4,7 +4,6 @@ using UnityEngine;
 
 public class Projectile : MonoBehaviour
 {
-    // Tốc độ bay của viên đạn
     public float speed;
 
     // Thời gian tồn tại tối đa trước khi tự huỷ
@@ -15,22 +14,24 @@ public class Projectile : MonoBehaviour
 
     // Hiệu ứng nổ khi bắn
     public GameObject explosion;
-
-    // Âm thanh phát ra khi đạn được bắn
     public GameObject soundObject;
-
-    // Dấu vết (vệt sáng) để lại khi đạn bay
     public GameObject trail;
 
-    // Khoảng thời gian giữa mỗi lần tạo dấu vết
     private float timeBtwTrail;
 
     // Khoảng thời gian gốc giữa các lần để lại trail
     public float startTimeBtwTrail;
 
+    private Rigidbody2D rb;
+
     private void Start()
     {
-        // Gọi hàm tự huỷ đạn sau một thời gian (để tránh tồn tại mãi)
+        // Lấy Rigidbody2D và áp lực bắn
+        rb = GetComponent<Rigidbody2D>();
+        rb.gravityScale = 1f; // ✅ Bật trọng lực
+        rb.AddForce(transform.up * speed, ForceMode2D.Impulse); // ✅ Bắn theo hướng đang nhìn
+
+        // Hiệu ứng âm thanh + nổ
         Invoke("DestroyProjectile", lifeTime);
 
         // Tạo âm thanh bắn ra
@@ -40,12 +41,15 @@ public class Projectile : MonoBehaviour
         Instantiate(explosion, transform.position, Quaternion.identity);
     }
 
+    private Vector3 trailSmoothVelocity = Vector3.zero;
+
     private void Update()
     {
-        // Tạo vệt sáng khi đạn di chuyển
+        // Hiệu ứng trail làm mượt theo vị trí cũ (mềm mại hơn)
         if (timeBtwTrail <= 0)
         {
-            Instantiate(trail, transform.position, Quaternion.identity);
+            Vector3 smoothTrailPosition = Vector3.SmoothDamp(transform.position, transform.position, ref trailSmoothVelocity, 0.02f);
+            Instantiate(trail, smoothTrailPosition, Quaternion.identity);
             timeBtwTrail = startTimeBtwTrail;
         }
         else
@@ -53,11 +57,9 @@ public class Projectile : MonoBehaviour
             timeBtwTrail -= Time.deltaTime;
         }
 
-        // Di chuyển đạn theo hướng lên (Vector2.up) với tốc độ đã đặt
-        transform.Translate(Vector2.up * speed * Time.deltaTime);
+        // ❌ Không dùng transform.Translate — đã dùng Rigidbody2D để xử lý lực và trọng lực
     }
 
-    // Huỷ đạn và tạo hiệu ứng nổ tại vị trí hiện tại
     void DestroyProjectile()
     {
         Instantiate(explosion, transform.position, Quaternion.identity);
@@ -67,15 +69,13 @@ public class Projectile : MonoBehaviour
     // Khi viên đạn va chạm với các đối tượng có tag nhất định
     private void OnTriggerEnter2D(Collider2D other)
     {
-        // Nếu chạm enemy thường → gây sát thương rồi huỷ đạn
-        if (other.tag == "Enemy")
+        if (other.CompareTag("Enemy"))
         {
             other.GetComponent<Enemy>().TakeDamage(damage);
             DestroyProjectile();
         }
 
-        // Nếu chạm boss → gây sát thương rồi huỷ đạn
-        if (other.tag == "boss")
+        if (other.CompareTag("boss"))
         {
             other.GetComponent<Boss>().TakeDamage(damage);
             DestroyProjectile();
